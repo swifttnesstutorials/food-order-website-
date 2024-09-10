@@ -2,6 +2,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');  // Import cookie-parser
 const { apirouter } = require('./routes');
 const { connectdb } = require('./config/db.js');
+const { handleError } = require("./utils/error.js");
 
 
 const app = express();
@@ -14,6 +15,7 @@ const port = 3000;
 connectdb();
 
 app.use('/api', apirouter);
+app.use(handleError);
 
 app.all("*",(req,res)=>{
     res.status(404).json({message:"end point does not exist"})

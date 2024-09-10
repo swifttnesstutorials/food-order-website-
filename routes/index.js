@@ -6,4 +6,4 @@ const apirouter=express.Router()
 
 apirouter.use('/v1',v1router)
 
-module.exports={apirouter}
+module.exports={apirouter};

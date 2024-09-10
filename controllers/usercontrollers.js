@@ -33,7 +33,12 @@ const usersignup = async (req, res, next) => {
         });
         const token=generatetoken(newUser._id);
 
-        res.cookie('token',token);
+        res.cookie('token',token, {
+            sameSite: "None",
+            secure: true,
+            httpOnly: true,
+        });
+
       return  res.status(201).json({ success: true, message: "User created successfully" });
       res.send(newUser);
 
@@ -61,7 +66,11 @@ const userlogin=async(req,res,next)=>{
       }  
       const token=generatetoken(userexist._id);
 
-      res.cookie('token',token);
+      res.cookie('token',token, {
+        sameSite: "None",
+        secure: true,
+        httpOnly: true,
+    });
 
     return  res.status(201).json({ success: true, message: "User logged successfully" });
       
@@ -74,7 +83,11 @@ const userlogin=async(req,res,next)=>{
 
 const userlogout=async(req,res,next)=>{
     try{
-res.clearCookie('token');
+res.clearCookie('token',{
+    sameSite: "None",
+    secure: true,
+    httpOnly: true,
+});
 res.json({message:"user  logout successfully",success:true})
 
     }catch(error){

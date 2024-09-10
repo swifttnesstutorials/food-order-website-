@@ -1,4 +1,5 @@
 const { FoodItem } = require("../models/fooditemsmodels.js");
+const { handleImageUpload } = require("../utils/imageUpload.js");
 
 
 const getAllFoodItems = async (req, res) => {
