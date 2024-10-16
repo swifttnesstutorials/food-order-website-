@@ -1,152 +1,70 @@
-const { user } = require('../models/usermodels.js');
+const User=require('../models/userModel.js')
 const bcrypt = require('bcrypt');
-const { generatetoken } = require('../utils/token.js');
-var jwt=require("jsonwebtoken")
-const dotenv=require('dotenv')
-dotenv.config()
-const jwtauth=require('jsonwebtoken')
-const usersignup = async (req, res, next) => {
-    try {
-        const { name, email, password, phone, profilepic, hotels } = req.body;
+const jwt = require('jsonwebtoken');
 
-        if (!name || !email || !password) {
-            return res.status(400).json({ success: false, message: "All fields are required" });
-        }
+const saltRounds = 10;
 
+const getAllUser=async(req, res) => {
+    const users=await User.find({});
+    res.json(users)
+  }
 
-        const isUserExist = await user.findOne({ email });
-        if (isUserExist) {
-            return res.status(400).json({ success: false, message: "User already exists" });
-        }
-
-        const saltRounds = 10;
-        const hashedPassword = bcrypt.hashSync(password, saltRounds);
-        console.log(hashedPassword);
-
-
-        const newUser = await user.create({
-            name,
-            email,
-            password: hashedPassword,
-            profilepic,
-            hotels
-        });
-        const token=generatetoken(newUser._id);
-
-        res.cookie('token',token, {
-            sameSite: "None",
-            secure: true,
-            httpOnly: true,
-        });
-
-      return  res.status(201).json({ success: true, message: "User created successfully" });
-      res.send(newUser);
-
-    } catch (error) {
-        console.error(error);
-     return   res.status(error.statusCode || 500).json({ message: error.message || "Server error" });
-    }
-};
-
-
-
-const userlogin=async(req,res,next)=>{
-    try{
-        const {password,email}=req.body
-        if(!password||!email ){
-            return res.status(400).json({success:false,message:"all fields are required"})
-        }
-        const userexist=await user.findOne({email})
-        if(!userexist){
-           return res.status(404).json({success:false,message:"user does not exist"})
-        }
- const passwordmatch=bcrypt.compareSync(password,userexist.password)
-      if(!passwordmatch){
-        return res.status(401).json({message:"user not authorized"})
-      }  
-      const token=generatetoken(userexist._id);
-
-      res.cookie('token',token, {
-        sameSite: "None",
-        secure: true,
-        httpOnly: true,
+ const getUserById= async(req, res) => {
+  const user=await User.findById(req.params.userId).exec();
+  res.json(user)
+  }
+  
+  const userSignup = async (req, res) => {
+    const { name, email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+  
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword
     });
+  
+    await user.save();
+  
+    // Add name and email to the token payload
+    const token = jwt.sign(
+      { _id: user._id, role: 'user', name: user.name, email: user.email }, 
+      '61b19ed193347d3a3c2b056ca3cf0af8639cea06a78ab8cb8c03a66f81c725634de8db004b5404e2f2418eae68f34b8ab1b1763a4a0cc2dcfd8a9a0dfc163719'
+    );
+    
+    res.cookie("token", token,{
+      sameSite:"None",
+      secure: true,
+      httpOnly:true,
+    });
+  
+    // Include the user name and email in the response
+    res.json({
+      success: true,
+      message: "User created successfully",
+      token,
+      name: user.name,
+      email: user.email
+    });
+  };
+  
+  
 
-    return  res.status(201).json({ success: true, message: "User logged successfully" });
-      
-    }catch(error){
 
+  const updateUser=async (req, res) => {
+    const updateduser=await User.findByIdAndUpdate(req.params.userId, req.body, {new:true})
+    res.json(updateduser)
+    } 
+  
+   const deleteUser=async (req, res) => {
+    await User.findByIdAndDelete(req.params.userId)
+      res.send('Deleted')
     }
-}
-
-
-
-const userlogout=async(req,res,next)=>{
-    try{
-res.clearCookie('token',{
-    sameSite: "None",
-    secure: true,
-    httpOnly: true,
-});
-res.json({message:"user  logout successfully",success:true})
-
-    }catch(error){
-        console.log(error);
-        res.status(error.statusCode||500).json({message:error.message})
-
-    }
-}
-const userprofile = async (req, res, next) => {
-    try {
-        const { id } = req.params;
-        console.log(user)
-        const userdata = await user.findOne({ _id: id }); 
-        if (!userdata) {
-            return res.status(404).json({ success: false, message: "User not found" });
-        }
-        res.json({ success: true, message: "User profile retrieved", data: userdata });
-    } catch (error) {
-        console.log(error);
-        res.status(error.statusCode || 500).json({ message: error.message || "Internal server error" });
-    }
-};
-
-
-const checkuser = (req, res, next) => {
-    try {
-        const { user } = req;
-        if (!user) {
-            return res.status(401).json({ success: false, message: "user not authorized" });
-        }
-        res.json({ success: true, message: "user authorized" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: "An error occurred", error: err.message });
-    }
-};
-
-
-const userauth = (req, res, next) => {
-    try {
-        console.log(req.cookies);
-        const { token } = req.cookies;
-        if (!token) {
-            return res.status(401).json({ success: false, message: "User not authorized, cookies not found" });
-        }
-
-        const tokenVerified = jwtauth.verify(token, process.env.JWT_SECRET_KEY);
-        if (!tokenVerified) {
-            return res.status(401).json({ success: false, message: "User not verified" });
-        }
-        req.user = tokenVerified; // Attach the decoded JWT payload to req.user
-        next();  // Continue to the next middleware
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-};
-
-
-
-
-module.exports = { usersignup ,userlogin,userlogout,userprofile,userauth,checkuser};
+    
+    module.exports={
+      getAllUser,
+      getUserById,
+      userSignup,
+      updateUser,
+      deleteUser
+    };

@@ -1,25 +1,46 @@
 const express = require('express');
-const cookieParser = require('cookie-parser');  // Import cookie-parser
-const { apirouter } = require('./routes');
-const { connectdb } = require('./config/db.js');
-const { handleError } = require("./utils/error.js");
-
+const foodRoutes = require('./routes/foodRoutes');
+const restaurantRoutes = require('./routes/restaurantRoutes');
+const userRoutes = require('./routes/userRoutes');
+const cartRoutes = require('./routes/cartRoutes');
+const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const roleRoutes = require('./routes/roleRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const mongoose = require('mongoose');
+const cors = require('cors');
 
 const app = express();
-
-app.use(express.json());
-app.use(cookieParser());  // Use cookie-parser middleware
-
 const port = 3000;
 
-connectdb();
+app.use(cors());
+app.use(express.json());
 
-app.use('/api', apirouter);
-app.use(handleError);
+// Define routes
+app.use('/foods', foodRoutes);
+app.use('/restaurants', restaurantRoutes);
+app.use('/carts', cartRoutes);
+app.use('/usersignup', userRoutes);
+app.use('/adminsignup', adminRoutes);
+app.use('/login', authRoutes);
+app.use('/logout', authRoutes);
+app.use('/checkRole', roleRoutes);
+app.use('/payments', paymentRoutes);
 
-app.all("*",(req,res)=>{
-    res.status(404).json({message:"end point does not exist"})
-})
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
-});
+// Start server and connect to MongoDB
+async function main() {
+    try {
+        await mongoose.connect('mongodb+srv://aryanandhaaryanandha5:4Bh1827PvvzBJv2V@cluster0.rwrcn.mongodb.net/', {
+           
+        });
+        console.log("Connected to MongoDB successfully");
+        
+        app.listen(port, () => {
+            console.log(`Example app listening on port ${port}`);
+        });
+    } catch (err) {
+        console.error("Error connecting to MongoDB:", err);
+    }
+}
+
+main();
